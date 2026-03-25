@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PVI 贷款计算器</title>
+<style>
+* { box-sizing: border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    max-width: 700px;
+    margin: 20px auto;
+    padding: 0 15px;
+    background: #f5f5f7;
+}
+h1 {
+    text-align: center;
+    color: #1d1d1f;
+    margin-bottom: 30px;
+}
+.section {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 18px;
+    color: #1d1d1f;
+}
+.form-group {
+    margin-bottom: 15px;
+}
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #424245;
+}
+input, select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #d2d2d7;
+    border-radius: 8px;
+    font-size: 16px;
+}
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.checkbox-group input {
+    width: auto;
+}
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+button {
+    flex: 1;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+}
+.btn-calculate {
+    background: #0071e3;
+    color: white;
+}
+.btn-calculate:hover {
+    background: #0077ed;
+}
+.btn-clear {
+    background: #e8e8ed;
+    color: #1d1d1f;
+}
+.result-box {
+    background: #f9f9fb;
+    border-radius: 8px;
+    padding: 15px;
+    white-space: pre-wrap;
+    font-family: Menlo, monospace;
+    font-size: 13px;
+    min-height: 300px;
+}
+.shortfall-negative { color: #2ecc71; font-weight: bold; }
+.shortfall-positive { color: #e74c3c; font-weight: bold; }
+</style>
+</head>
+<body>
+<h1>🧮 PVI 贷款计算器</h1>
+
+<div class="section">
+    <h2>🏠 房产信息</h2>
+    <div class="form-group">
+        <label for="propertyValue">房产总价值 (AUD)</label>
+        <input type="number" id="propertyValue" value="800000">
+    </div>
+    <div class="form-group">
+        <label for="state">房产所在州</label>
+        <select id="state">
+            <option value="QLD">Queensland (QLD)</option>
+            <option value="NSW">New South Wales (NSW)</option>
+            <option value="VIC">Victoria (VIC)</option>
+            <option value="WA">Western Australia (WA)</option>
+            <option value="SA">South Australia (SA)</option>
+            <option value="TAS">Tasmania (TAS)</option>
+            <option value="NT">Northern Territory (NT)</option>
+            <option value="ACT">Australian Capital Territory (ACT)</option>
+        </select>
+    </div>
+    <div class="form-group checkbox-group">
+        <input type="checkbox" id="isHL">
+        <label for="isHL">House & Land 拆分（仅土地价格计算印花税）</label>
+    </div>
+    <div class="form-group" id="landPriceGroup" style="display:none;">
+        <label for="landPrice">土地购买价格 (AUD)</label>
+        <input type="number" id="landPrice" value="">
+    </div>
+</div>
+
+<div class="section">
+    <h2>💰 贷款信息</h2>
+    <div class="form-group">
+        <label for="product">贷款产品</label>
+        <select id="product">
+            <option value="">-- 选择产品 --</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="lvr">贷款价值比 LVR (%)</label>
+        <input type="number" step="0.1" id="lvr" value="80" placeholder="例如 80 = 80%">
+        <small>LVR 自动算贷款金额，改贷款金额也自动算 LVR</small>
+    </div>
+    <div class="form-group">
+        <label for="loanAmount">贷款金额 (AUD)</label>
+        <input type="number" id="loanAmount" value="640000">
+    </div>
+    <div class="form-group">
+        <label for="interestRate">年利率 (%)</label>
+        <input type="number" step="0.01" id="interestRate" value="5.5">
+    </div>
+    <div class="form-group">
+        <label for="loanTerm">贷款期限 (年)</label>
+        <input type="number" id="loanTerm" value="30">
+    </div>
+</div>
+
+<div class="section">
+    <h2>💸 交易费用</h2>
+    <div class="form-group">
+        <label for="legalFee">律师过户费 (AUD)</label>
+        <input type="number" id="legalFee" value="1500">
+    </div>
+    <div class="form-group">
+        <label for="pexaFee">PEXA 网络交割费 (AUD)</label>
+        <input type="number" id="pexaFee" value="120">
+    </div>
+    <div class="form-group">
+        <label for="lmiFee">LMI 贷方抵押保险 (AUD，可选填0)</label>
+        <input type="number" id="lmiFee" value="0">
+    </div>
+    <div class="form-group">
+        <label for="otherFees">其他费用 (AUD)</label>
+        <input type="number" id="otherFees" value="0">
+    </div>
+    <div class="form-group checkbox-group">
+        <input type="checkbox" id="firstHome">
+        <label for="firstHome">申请首次置业印花税减免</label>
+    </div>
+</div>
+
+<div class="section">
+    <h2>📋 贷款产品费用</h2>
+    <div id="productFeeInfo">
+        <p style="color:#6e6e73; margin:0;">选择贷款产品后会自动显示产品费用</p>
+    </div>
+</div>
+
+<div class="section">
+    <h2>💵 客户资金</h2>
+    <div class="form-group">
+        <label for="cashOnHand">客户手头现金/存款 (AUD)</label>
+        <input type="number" id="cashOnHand" value="200000">
+    </div>
+</div>
+
+<div class="button-group">
+    <button class="btn-calculate" onclick="calculate()">🧮 开始计算</button>
+    <button class="btn-clear" onclick="clearForm()">📋 清空</button>
+</div>
+
+<div class="section">
+    <h2>📊 计算结果</h2>
+    <div id="result" class="result-box"></div>
+</div>
+
+<script>
+// 贷款产品数据库 - 包含产品费用
+const LOAN_PRODUCTS = [
+    {
+        name: "CBA Basic Home Loan",
+        bank: "Commonwealth Bank",
+        establishmentFee: 600,
+        valuationFee: 300,
+        mortgageRegistrationFee: 100,
+        description: "CBA 基础房贷"
+    },
+    {
+        name: "ANZ Breakfree Mortgage",
+        bank: "ANZ",
+        establishmentFee: 699,
+        valuationFee: 350,
+        mortgageRegistrationFee: 100,
+        description: "ANZ 免费房贷"
+    },
+    {
+        name: "NAB Personalised Home Loan",
+        bank: "NAB",
+        establishmentFee: 600,
+        valuationFee: 300,
+        mortgageRegistrationFee: 100,
+        description: "NAB 个性化房贷"
+    },
+    {
+        name: "Westpac Flexi First Home Loan",
+        bank: "Westpac",
+        establishmentFee: 650,
+        valuationFee: 320,
+        mortgageRegistrationFee: 100,
+        description: "Westpac 首次置业房贷"
+    },
+    {
+        name: "Macquarie Bank Home Loan",
+        bank: "Macquarie Bank",
+        establishmentFee: 0,
+        valuationFee: 0,
+        mortgageRegistrationFee: 100,
+        description: "麦格理银行零费用房贷"
+    },
+    {
+        name: "ING Mortgage Simplifier",
+        bank: "ING",
+        establishmentFee: 0,
+        valuationFee: 250,
+        mortgageRegistrationFee: 100,
+        description: "ING 简化房贷"
+    },
+    {
+        name: "Suncorp Easy Home Loan",
+        bank: "Suncorp",
+        establishmentFee: 600,
+        valuationFee: 300,
+        mortgageRegistrationFee: 100,
+        description: "Suncorp 轻松房贷"
+    },
+    {
+        name: "Bank of Queensland Home Loan",
+        bank: "BOQ",
+        establishmentFee: 600,
+        valuationFee: 300,
+        mortgageRegistrationFee: 100,
+        description: "昆士兰银行房贷"
+    }
+];
+
+// 印花税税率表
+const STAMP_DUTY_RATES = {
+    "NSW": {
+        name: "New South Wales",
+        brackets: [
+            [0, 15000, 1.25],
+            [15001, 30000, 1.50],
+            [30001, 100000, 1.75],
+            [100001, 200000, 3.50],
+            [200001, 300000, 4.50],
+            [300001, 1000000, 4.90],
+            [1000001, 3000000, 5.45],
+            [3000001, Infinity, 7.00],
+        ]
+    },
+    "VIC": {
+        name: "Victoria",
+        brackets: [
+            [0, 25000, 1.40],
+            [25001, 130000, 2.40],
+            [130001, 440000, 5.00],
+            [440001, 550000, 6.00],
+            [550001, 960000, 6.50],
+            [960001, 1600000, 7.00],
+            [1600001, 2000000, 7.50],
+            [2000001, Infinity, 8.00],
+        ]
+    },
+    "QLD": {
+        name: "Queensland",
+        brackets: [
+            [0, 5000, 0],
+            [5001, 75000, 1.50],
+            [75001, 100000, 2.00],
+            [100001, 250000, 3.00],
+            [250001, 399999, 3.50],
+            [400000, 599999, 4.50],
+            [600000, 999999, 5.00],
+            [1000000, Infinity, 5.75], // 最高税率 5.75% 住宅，商业地产 $2M+ 5%
+        ],
+        // 2026 更新：首次置业 QLD 新建房全免无上限，存量房 $700k 以下全免
+        firstHomeExemptUpTo: 700000,
+        firstHomeConcessionUpTo: 700000
+    },
+    "WA": {
+        name: "Western Australia",
+        brackets: [
+            [0, 120000, 0],
+            [120001, 150000, 1.90],
+            [150001, 360000, 2.85],
+            [360001, 725000, 3.80],
+            [725001, 1000000, 4.75],
+            [1000001, Infinity, 5.15],
+        ]
+    },
+    "SA": {
+        name: "South Australia",
+        brackets: [
+            [0, 12000, 1.00],
+            [12001, 30000, 2.00],
+            [30001, 50000, 3.00],
+            [50001, 100000, 3.50],
+            [100001, 200000, 4.00],
+            [200001, 250000, 4.25],
+            [250001, 300000, 4.75],
+            [300001, 500000, 5.00],
+            [500001, Infinity, 5.50],
+        ]
+    },
+    "TAS": {
+        name: "Tasmania",
+        brackets: [
+            [0, 130000, 0],
+            [130001, 430000, 2.00],
+            [430001, 750000, 3.00],
+            [750001, Infinity, 3.50],
+        ]
+    },
+    "NT": {
+        name: "Northern Territory",
+        brackets: [
+            [0, 525000, 0],
+            [525001, 1500000, 3.00],
+            [1500001, Infinity, 5.15],
+        ]
+    },
+    "ACT": {
+        name: "Australian Capital Territory",
+        brackets: [
+            [0, 200000, 0],
+            [200001, 300000, 2.00],
+            [300001, 500000, 3.00],
+            [500001, 750000, 4.00],
+            [750001, 1000000, 5.00],
+            [1000001, 1455000, 6.00],
+            [1455001, Infinity, 6.50], // 2026 更新：最高 6.5%
+        ],
+        firstHomeExemptUpTo: 1020000,
+        firstHomeConcessionUpTo: 1455000
+    }
+};
+
+const DEFAULT_LEGAL_FEES = {
+    "QLD": 1500, "NSW": 1800, "VIC": 1700, "default": 1600
+};
+
+// 初始化产品下拉框
+function initProducts() {
+    const select = document.getElementById('product');
+    LOAN_PRODUCTS.forEach((p, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.textContent = p.name + ' (' + p.bank + ')';
+        select.appendChild(opt);
+    });
+}
+
+// 产品变化显示费用
+document.getElementById('product').addEventListener('change', function() {
+    updateProductInfo();
+    updateTotalFees();
+});
+
+function updateProductInfo() {
+    const idx = parseInt(document.getElementById('product').value);
+    const container = document.getElementById('productFeeInfo');
+    if (isNaN(idx)) {
+        container.innerHTML = '<p style="color:#6e6e73; margin:0;">选择贷款产品后会自动显示产品费用</p>';
+        return;
+    }
+    const p = LOAN_PRODUCTS[idx];
+    container.innerHTML = `
+        <table style="width:100%; border-collapse:collapse;">
+        <tr><td style="padding:5px 0;"><b>产品:</b> ${p.name}</td></tr>
+        <tr><td style="padding:5px 0;"><b>银行:</b> ${p.bank}</td></tr>
+        <tr><td style="padding:5px 0;"><b>开户费:</b> $${p.establishmentFee}</td></tr>
+        <tr><td style="padding:5px 0;"><b>估值费:</b> $${p.valuationFee}</td></tr>
+        <tr><td style="padding:5px 0;"><b>抵押登记费:</b> $${p.mortgageRegistrationFee}</td></tr>
+        </table>
+    `;
+}
+
+function getSelectedProduct() {
+    const idx = parseInt(document.getElementById('product').value);
+    if (isNaN(idx)) return null;
+    return LOAN_PRODUCTS[idx];
+}
+
+// LVR 和贷款金额双向计算
+document.getElementById('lvr').addEventListener('input', function() {
+    const lvr = parseFloat(this.value);
+    const pv = parseFloat(document.getElementById('propertyValue').value);
+    if (!isNaN(lvr) && !isNaN(pv)) {
+        const loanAmount = (lvr / 100) * pv;
+        document.getElementById('loanAmount').value = Math.round(loanAmount);
+    }
+});
+
+document.getElementById('loanAmount').addEventListener('input', function() {
+    const loan = parseFloat(this.value);
+    const pv = parseFloat(document.getElementById('propertyValue').value);
+    if (!isNaN(loan) && !isNaN(pv) && pv > 0) {
+        const lvr = (loan / pv) * 100;
+        document.getElementById('lvr').value = lvr.toFixed(1);
+    }
+});
+
+document.getElementById('propertyValue').addEventListener('input', function() {
+    // 当房价变化，用当前LVR更新贷款金额
+    const lvr = parseFloat(document.getElementById('lvr').value);
+    const pv = parseFloat(this.value);
+    if (!isNaN(lvr) && !isNaN(pv)) {
+        const loanAmount = (lvr / 100) * pv;
+        document.getElementById('loanAmount').value = Math.round(loanAmount);
+    }
+});
+
+// 切换House & Land土地输入
+document.getElementById('isHL').addEventListener('change', function() {
+    const group = document.getElementById('landPriceGroup');
+    if (this.checked) {
+        group.style.display = 'block';
+    } else {
+        group.style.display = 'none';
+    }
+});
+
+// 州变化更新默认律师费
+document.getElementById('state').addEventListener('change', function() {
+    const state = this.value;
+    const defaultFee = DEFAULT_LEGAL_FEES[state] || DEFAULT_LEGAL_FEES.default;
+    document.getElementById('legalFee').value = defaultFee;
+});
+
+// 页面加载初始化
+window.onload = function() {
+    initProducts();
+    updateProductInfo();
+};
+
+// 计算印花税
+function calculateStampDuty(price, state) {
+    price = parseFloat(price);
+    if (price <= 0) return 0;
+    const rates = STAMP_DUTY_RATES[state];
+    let duty = 0;
+    for (let [lower, upper, rate] of rates.brackets) {
+        if (price <= lower) continue;
+        let currentUpper = Math.min(upper, price);
+        duty += (currentUpper - lower) * (rate / 100);
+    }
+    
+    // 首次置业减免
+    if (document.getElementById('firstHome').checked && rates.firstHomeExemptUpTo) {
+        if (price <= rates.firstHomeExemptUpTo) {
+            return 0;
+        } else if (rates.firstHomeConcessionUpTo && price <= rates.firstHomeConcessionUpTo) {
+            const concession = (rates.firstHomeConcessionUpTo - price) / rates.firstHomeConcessionUpTo;
+            duty *= (1 - concession);
+        }
+    }
+    return Math.round(duty * 100) / 100;
+}
+
+// 计算月供
+function calculateMonthlyPayment(principal, annualRate, years) {
+    if (annualRate === 0) {
+        return principal / (years * 12);
+    }
+    const monthlyRate = annualRate / 100 / 12;
+    const n = years * 12;
+    const payment = principal * (monthlyRate * Math.pow(1 + monthlyRate, n)) / (Math.pow(1 + monthlyRate, n) - 1);
+    return Math.round(payment * 100) / 100;
+}
+
+// 主计算函数
+function calculate() {
+    // 获取输入
+    const propertyValue = parseFloat(document.getElementById('propertyValue').value) || 0;
+    const loanAmount = parseFloat(document.getElementById('loanAmount').value) || 0;
+    const interestRate = parseFloat(document.getElementById('interestRate').value) || 0;
+    const loanTerm = parseInt(document.getElementById('loanTerm').value) || 30;
+    const legalFee = parseFloat(document.getElementById('legalFee').value) || 0;
+    const pexaFee = parseFloat(document.getElementById('pexaFee').value) || 0;
+    const lmiFee = parseFloat(document.getElementById('lmiFee').value) || 0;
+    const otherFees = parseFloat(document.getElementById('otherFees').value) || 0;
+    const cashOnHand = parseFloat(document.getElementById('cashOnHand').value) || 0;
+    const state = document.getElementById('state').value;
+    const isHL = document.getElementById('isHL').checked;
+    
+    // 计算印花税
+    let stampDuty, stampDutyDesc;
+    if (isHL) {
+        const landPrice = parseFloat(document.getElementById('landPrice').value) || 0;
+        stampDuty = calculateStampDuty(landPrice, state);
+        stampDutyDesc = `House & Land 仅土地价格 $${landPrice.toLocaleString()}`;
+    } else {
+        stampDuty = calculateStampDuty(propertyValue, state);
+        stampDutyDesc = `完整房产价格 $${propertyValue.toLocaleString()}`;
+    }
+    
+    // 贷款计算
+    const monthlyPayment = calculateMonthlyPayment(loanAmount, interestRate, loanTerm);
+    const totalPayments = monthlyPayment * loanTerm * 12;
+    const totalInterest = totalPayments - loanAmount;
+    
+    // 获取产品费用
+    const product = getSelectedProduct();
+    let productFees = 0;
+    let productLines = '';
+    if (product) {
+        productFees = product.establishmentFee + product.valuationFee + product.mortgageRegistrationFee;
+        productLines = `
+  产品费用:
+    开户费:           $${product.establishmentFee.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}
+    估值费:           $${product.valuationFee.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}
+    抵押登记费:       $${product.mortgageRegistrationFee.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}
+  产品总费用:       $${productFees.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}
+`;
+    }
+    
+    // 计算总费用和交割缺口
+    const totalCosts = propertyValue + stampDuty + legalFee + pexaFee + lmiFee + otherFees + productFees;
+    const requiredCash = totalCosts - loanAmount;
+    const shortfall = requiredCash - cashOnHand;
+    
+    // 计算 LVR
+    const lvr = parseFloat(document.getElementById('lvr').value) || ((loanAmount / propertyValue) * 100);
+    
+    // 生成结果HTML
+    let result = `
+============================================================
+                PVI 贷款计算器 - 计算结果
+============================================================
+
+🏠 房产信息
+  总房产价值:      $${propertyValue.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}
+  所在州:          ${STAMP_DUTY_RATES[state].name}
+  ${isHL ? `  房屋类型:      House & Land 拆分\n  土地价格:       $${parseFloat(document.getElementById('landPrice').value).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}` : `  房屋类型:       完整房产`}
+
+💰 贷款信息
+  LVR:             ${lvr.toFixed(1)}%
+  贷款金额:        $${loanAmount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}
+  年利率:          ${interestRate.toFixed(2)}%
+  贷款期限:        ${loanTerm} 年
+  月供:            $${monthlyPayment.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}
+  总还款额:        $${totalPayments.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}
+  总利息:          $${totalInterest.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}
+
+${product ? `📋 选中产品: ${product.name} (${product.bank})\n` + productLines : ''}
+💸 交易费用
+  印花税 (${stampDutyDesc})
+                  $${stampDuty.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}
+  律师过户费:       $${legalFee.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}
+  PEXA 交割费:     $${pexaFee.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}
+  LMI 保险:        $${lmiFee.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}
+  其他费用:         $${otherFees.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}
+  💰 总交易费用:    $${(stampDuty + legalFee + pexaFee + lmiFee + otherFees + productFees).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}
+
+💵 交割缺口计算
+  房价 + 交易费用:   $${totalCosts.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}
+  - 获批贷款:       $${loanAmount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}
+  = 需要总现金:      $${requiredCash.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}
+  - 客户现有现金:    $${cashOnHand.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}
+  -------------------------------
+  `;
+  
+  if (shortfall > 0) {
+      result += `<span class="shortfall-positive">⚠️  交割缺口:  $${shortfall.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}</span>
+      客户需要额外准备这么多现金用于交割`;
+  } else {
+      result += `<span class="shortfall-negative">✅  交割盈余:  ${(-shortfall).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}</span>
+      客户现金足够，交割后剩余`;
+  }
+  
+  result += `
+
+============================================================
+`;
+  
+  document.getElementById('result').innerHTML = result;
+}
+
+function clearForm() {
+    document.getElementById('propertyValue').value = '800000';
+    document.getElementById('lvr').value = '80';
+    document.getElementById('loanAmount').value = '640000';
+    document.getElementById('interestRate').value = '5.5';
+    document.getElementById('loanTerm').value = '30';
+    document.getElementById('product').value = '';
+    updateProductInfo();
+    const state = document.getElementById('state').value;
+    document.getElementById('legalFee').value = DEFAULT_LEGAL_FEES[state] || DEFAULT_LEGAL_FEES.default;
+    document.getElementById('pexaFee').value = '120';
+    document.getElementById('lmiFee').value = '0';
+    document.getElementById('otherFees').value = '0';
+    document.getElementById('cashOnHand').value = '200000';
+    document.getElementById('isHL').checked = false;
+    document.getElementById('landPriceGroup').style.display = 'none';
+    document.getElementById('firstHome').checked = false;
+    document.getElementById('result').innerHTML = '';
+}
+</script>
+</body>
+</html>
